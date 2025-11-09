@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tic-Tac-Toe with AI| Minimax Algorithm</title>
+<style>
+    * {
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+    }
+
+    body {
+        background: linear-gradient(135deg, #d881fb, #eb2d2d);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        flex-direction: column;
+        color: white;
+    }
+
+    h1 {
+        margin-bottom: 20px;
+        font-size: 2rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .board {
+        display: grid;
+        grid-template-columns: repeat(3, 100px);
+        grid-template-rows: repeat(3, 100px);
+        gap: 8px;
+    }
+
+    .cell {
+        width: 100px;
+        height: 100px;
+        background-color: #ffffff20;
+        border: 2px solid #fff;
+        border-radius: 10px;
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .cell:hover {
+        background-color: #ffffff40;
+        transform: scale(1.05);
+    }
+
+    .winner {
+        background-color: #00C851 !important;
+    }
+
+    .status {
+        margin-top: 20px;
+        font-size: 1.3rem;
+        font-weight: 500;
+    }
+
+    button {
+        margin-top: 25px;
+        padding: 10px 20px;
+        background: #fff;
+        color: #5563DE;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    button:hover {
+        background: #00C851;
+        color: white;
+    }
+</style>
+</head>
+<body>
+
+<h1>Tic-Tac-Toe with AI</h1>
+<div class="board" id="board"></div>
+<div class="status" id="status">You are X. Your turn!</div>
+<button onclick="restartGame()">Restart Game</button>
+
+<script>
+const boardElement = document.getElementById("board");
+const statusText = document.getElementById("status");
+
+let board = Array(9).fill("");
+let currentPlayer = "X";
+let gameOver = false;
+
+// Create game board
+for (let i = 0; i < 9; i++) {
+    const cell = document.createElement("div");
+    cell.classList.add("cell");
+    cell.dataset.index = i;
+    cell.addEventListener("click", () => handleMove(i));
+    boardElement.appendChild(cell);
+}
+
+// Handle player move
+function handleMove(index) {
+    if (board[index] !== "" || gameOver) return;
+    board[index] = currentPlayer;
+    renderBoard();
+
+    if (checkWinner(board, currentPlayer)) {
+        statusText.textContent = "🎉 You win!";
+        highlightWinningCells(currentPlayer);
+        gameOver = true;
+        return;
+    }
+
+    if (board.every(cell => cell !== "")) {
+        statusText.textContent = "🤝 It's a draw!";
+        gameOver = true;
+        return;
+    }
+
+    // AI turn
+    statusText.textContent = "AI is thinking...";
+    setTimeout(aiMove, 500);
+}
+
+function aiMove() {
+    let bestScore = -Infinity;
+    let move;
+
+    for (let i = 0; i < 9; i++) {
+        if (board[i] === "") {
+            board[i] = "O";
+            let score = minimax(board, 0, false);
+            board[i] = "";
+            if (score > bestScore) {
+                bestScore = score;
+                move = i;
+            }
+        }
+    }
+
+    board[move] = "O";
+    renderBoard();
+
+    if (checkWinner(board, "O")) {
+        statusText.textContent = "🤖 AI wins!";
+        highlightWinningCells("O");
+        gameOver = true;
+        return;
+    }
+
+    if (board.every(cell => cell !== "")) {
+        statusText.textContent = "🤝 It's a draw!";
+        gameOver = true;
+        return;
+    }
+
+    statusText.textContent = "Your turn!";
+}
+
+// Minimax algorithm
+function minimax(board, depth, isMaximizing) {
+    if (checkWinner(board, "O")) return 1;
+    if (checkWinner(board, "X")) return -1;
+    if (board.every(cell => cell !== "")) return 0;
+
+    if (isMaximizing) {
+        let bestScore = -Infinity;
+        for (let i = 0; i < 9; i++) {
+            if (board[i] === "") {
+                board[i] = "O";
+                let score = minimax(board, depth + 1, false);
+                board[i] = "";
+                bestScore = Math.max(score, bestScore);
+            }
+        }
+        return bestScore;
+    } else {
+        let bestScore = Infinity;
+        for (let i = 0; i < 9; i++) {
+            if (board[i] === "") {
+                board[i] = "X";
+                let score = minimax(board, depth + 1, true);
+                board[i] = "";
+                bestScore = Math.min(score, bestScore);
+            }
+        }
+        return bestScore;
+    }
+}
+
+// Check winner
+function checkWinner(b, player) {
+    const wins = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+    ];
+    return wins.some(combo => combo.every(i => b[i] === player));
+}
+
+function highlightWinningCells(player) {
+    const wins = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+    ];
+    wins.forEach(combo => {
+        if (combo.every(i => board[i] === player)) {
+            combo.forEach(i => {
+                boardElement.children[i].classList.add("winner");
+            });
+        }
+    });
+}
+
+// Render board
+function renderBoard() {
+    for (let i = 0; i < 9; i++) {
+        boardElement.children[i].textContent = board[i];
+    }
+}
+
+// Restart game
+function restartGame() {
+    board = Array(9).fill("");
+    currentPlayer = "X";
+    gameOver = false;
+    statusText.textContent = "You are X. Your turn!";
+    Array.from(boardElement.children).forEach(cell => {
+        cell.textContent = "";
+        cell.classList.remove("winner");
+    });
+}
+</script>
+
+</body>
+</html>
